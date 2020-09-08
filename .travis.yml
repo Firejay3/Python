@@ -1,5 +1,8 @@
 os: linux
 dist: focal
+env:
+  global:
+    - CC_TEST_REPORTER_ID=155ed2b710947e6337d92ae147a0eafb7824400f53c1ecd749dbf6c59a12931d
 language: python
 python: 3.8
 cache: pip
@@ -9,6 +12,9 @@ notifications:
     webhooks: https://www.travisbuddy.com/
     on_success: never
 before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
   - black --check . || true
   - flake8 --ignore=E203,W503 --max-complexity=25 --max-line-length=88 --statistics --count .
   - scripts/validate_filenames.py  # no uppercase, no spaces, in a directory
@@ -16,5 +22,7 @@ before_script:
 script:
   - mypy --ignore-missing-imports .
   - pytest --doctest-modules --cov-report=term-missing:skip-covered --cov=. .
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
 after_success:
   - scripts/build_directory_md.py 2>&1 | tee DIRECTORY.md
